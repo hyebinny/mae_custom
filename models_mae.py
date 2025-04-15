@@ -120,32 +120,65 @@ class MaskedAutoencoderViT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], 3, h * p, h * p))
         return imgs
 
-    def random_masking(self, x, mask_ratio):
-        """
-        Perform per-sample random masking by per-sample shuffling.
-        Per-sample shuffling is done by argsort random noise.
-        x: [N, L, D], sequence
-        """
-        N, L, D = x.shape  # batch, length, dim
-        len_keep = int(L * (1 - mask_ratio))
+    # def random_masking(self, x, mask_ratio):
+    #     """
+    #     Perform per-sample random masking by per-sample shuffling.
+    #     Per-sample shuffling is done by argsort random noise.
+    #     x: [N, L, D], sequence
+    #     """
+    #     N, L, D = x.shape  # batch, length, dim
+    #     len_keep = int(L * (1 - mask_ratio))
         
-        noise = torch.rand(N, L, device=x.device)  # noise in [0, 1]
+    #     noise = torch.rand(N, L, device=x.device)  # noise in [0, 1]
         
-        # sort noise for each sample
-        ids_shuffle = torch.argsort(noise, dim=1)  # ascend: small is keep, large is remove
-        ids_restore = torch.argsort(ids_shuffle, dim=1)
+    #     # sort noise for each sample
+    #     ids_shuffle = torch.argsort(noise, dim=1)  # ascend: small is keep, large is remove
+    #     ids_restore = torch.argsort(ids_shuffle, dim=1)
 
-        # keep the first subset
-        ids_keep = ids_shuffle[:, :len_keep]
+    #     # keep the first subset
+    #     ids_keep = ids_shuffle[:, :len_keep]
+    #     x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+
+    #     # generate the binary mask: 0 is keep, 1 is remove
+    #     mask = torch.ones([N, L], device=x.device)
+    #     mask[:, :len_keep] = 0
+    #     # unshuffle to get the binary mask
+    #     mask = torch.gather(mask, dim=1, index=ids_restore)
+
+    #     return x_masked, mask, ids_restore
+    
+    def random_masking(self, x, mask_ratio):
+        N, L, D = x.shape
+        H = W = int(L**0.5)
+
+        mask_vec = torch.zeros((N, L), device=x.device)
+        mask_type = 'center_block'
+        # mask_type = 'checkerboard'
+
+        if mask_type == 'center_block':
+            for r in range(5, 9):
+                for c in range(5, 9):
+                    idx = r * W + c
+                    mask_vec[:, idx] = 1
+
+        elif mask_type == 'checkerboard':
+            for i in range(H):
+                for j in range(W):
+                    if (i + j) % 2 == 0:
+                        idx = i * W + j
+                        mask_vec[:, idx] = 1
+
+        assert mask_vec.shape == (N, L)
+
+        ids_shuffle = torch.argsort(mask_vec, dim=1)      # keep 먼저
+        ids_restore = torch.argsort(ids_shuffle, dim=1)   # 복원용 인덱스
+
+        ids_keep = torch.nonzero(mask_vec == 0, as_tuple=False)[:, 1].reshape(N, -1)  # ✅ 수정
         x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
 
-        # generate the binary mask: 0 is keep, 1 is remove
-        mask = torch.ones([N, L], device=x.device)
-        mask[:, :len_keep] = 0
-        # unshuffle to get the binary mask
-        mask = torch.gather(mask, dim=1, index=ids_restore)
+        return x_masked, mask_vec, ids_restore
 
-        return x_masked, mask, ids_restore
+
 
     def forward_encoder(self, x, mask_ratio):
         # embed patches
