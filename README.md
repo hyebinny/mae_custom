@@ -10,13 +10,13 @@ mae_vit_base_patch16는 한 패치의 크기가 (16픽셀X16픽셀)인 경우로
 https://github.com/facebookresearch/mae.git 에 안내되어 있는 내용을 따라 환경을 설정해주세요.
 이때 `timm==0.3.2` 버전은 꼭 맞춰주셔아 합니다! (버전이 다르면 모델이 안 돌아갑니다.)
 
-제가 작업한 환경은 아래와 같습니다.
+제가 작업한 환경은 아래와 같습니다.  
 
-WSL
-ubuntu: 24.04
-codna: 24.9.2
-CUDA: 11.6
-TORCH: 1.13.1+cu116 (cuda와 torch의 cuda 버전을 꼭 맞춰주셔야 합니다.)
+WSL  
+ubuntu: 24.04  
+codna: 24.9.2  
+CUDA: 11.6  
+TORCH: 1.13.1+cu116 (cuda와 torch의 cuda 버전을 꼭 맞춰주셔야 합니다.)  
 
 base 환경의 CUDA 버전이 다르면, 가상환경 생성 후 아래 명령어로 가상환경 안에 CUDA를 따로 구성하실 수 있습니다.
 ```
@@ -66,7 +66,6 @@ python main_pretrain.py \
   --data_path [학습 데이터 경로] \
   --resume [위에서 다운받은 mae_visualize_vit_base.pth 경로] \
   --mask_type [masking 방법]
-
 ```
 
 학습 데이터가 `data/original/train/class_0/image.png` 경로에 저장되어 있다면 학습 데이터 경로는 `data/original/`으로 전달합니다.
