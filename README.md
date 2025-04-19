@@ -28,19 +28,19 @@ conda install -c "nvidia/label/cuda-11.6.0" cuda-toolkit
 아래와 같은 구조로 이미지 데이터를 조직하세요.
 ```
 | data
-		| -- dark
-		| -- mix
-		| -- original
-				| -- train / class_0
-						| -- 00001_image_000001.png
-						| -- 00001_image_000002.png
-						...
-						| -- 00090_image_000015.png
-				| -- val / class_0
-						| -- 00004_image_000001.png
-						| -- 00004_image_000002.png
-						...
-						| -- 00087_image_000015.png
+    | -- dark
+    | -- mix
+    | -- original
+    | -- train / class_0
+        | -- 00001_image_000001.png
+        | -- 00001_image_000002.png
+        ...
+        | -- 00090_image_000015.png
+    | -- val / class_0
+        | -- 00004_image_000001.png
+        | -- 00004_image_000002.png
+        ...
+        | -- 00087_image_000015.png
 ```
 즉, 이미지들은 train/class_0 그리고 val/class_0 안에 들어있어야 합니다.
 train/val split은 본 repo의 `trainval_split/train_val_copy.py`를 활용하실 수 있습니다.
