@@ -70,6 +70,7 @@ python main_pretrain.py \
 
 학습 데이터가 `data/original/train/class_0/image.png` 경로에 저장되어 있다면 학습 데이터 경로는 `data/original/`으로 전달합니다.  
 `--mask_type`으로 지정할 수 있는 옵션은 다음과 같습니다. `random_masking`, `center_block`, `random_block`, 그리고 `custom_tensor`.  
+  
 `random_masking`: 랜덤으로 마스킹 생성, `mask_ratrio`와 같이 주어져야 합니다.  
 `center_block`: 이미지 중앙에 mask를 생성합니다. 한 변의 길이의 기본값은 4이며 `block_size` 옵션으로 변경할 수 있습니다.  
 `random_block`: 랜덤으로 사각형 모양 마스킹 생성  
