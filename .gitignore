@@ -1,4 +1,4 @@
 .dl_proj/
 ckpt/
-output_dir/
-output_recon/
+masks_tensor/
+output/

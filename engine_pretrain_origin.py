@@ -14,9 +14,6 @@ from typing import Iterable
 
 import torch
 
-import torchvision.utils as vutils
-import os
-
 import util.misc as misc
 import util.lr_sched as lr_sched
 
@@ -40,47 +37,6 @@ def train_one_epoch(model: torch.nn.Module,
         print('log_dir: {}'.format(log_writer.log_dir))
 
     for data_iter_step, (samples, _) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
-
-        # if data_iter_step == 0 and misc.is_main_process():
-        if epoch % 10 == 0 and data_iter_step == 0 and misc.is_main_process():    
-
-            model.eval()
-            with torch.no_grad():
-                img = samples[0:1].to(device)  # 첫 이미지만
-                loss, y, mask = model(img, mask_ratio=args.mask_ratio, mask_type=args.mask_type)
-
-                # 복원
-                y = model.unpatchify(y)
-                y = y.permute(0, 2, 3, 1).squeeze().cpu()  # [H, W, C]
-
-                # 정규화 복원
-                def unnormalize(img):
-                    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-                    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-                    return img * std + mean
-
-                recon = unnormalize(y.permute(2, 0, 1))  # [3, H, W]
-                orig = unnormalize(samples[0].cpu())
-        
-                # 마스크 시각화
-                patch_size = model.patch_embed.patch_size[0]
-                mask_img = orig.clone()
-                mask = mask[0]  # [196]
-                for i in range(mask.shape[0]):
-                    if mask[i] == 1:
-                        row = i // 14
-                        col = i % 14
-                        mask_img[:, row*patch_size:(row+1)*patch_size, col*patch_size:(col+1)*patch_size] = 0.5  # 회색 마스킹
-
-                # 저장 경로
-                vis_dir = os.path.join(args.output_dir, "visual_debug")
-                os.makedirs(vis_dir, exist_ok=True)
-                vutils.save_image(orig, os.path.join(vis_dir, f"orig_e{epoch:03d}.png"))
-                vutils.save_image(mask_img, os.path.join(vis_dir, f"masked_e{epoch:03d}.png"))
-                vutils.save_image(recon, os.path.join(vis_dir, f"recon_e{epoch:03d}.png"))
-
-
-            model.train(True)  # 다시 학습 모드로
 
         # we use a per iteration (instead of per epoch) lr scheduler
         if data_iter_step % accum_iter == 0:

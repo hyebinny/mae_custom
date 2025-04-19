@@ -11,6 +11,8 @@
 
 from functools import partial
 
+import numpy as np
+
 import torch
 import torch.nn as nn
 
@@ -119,68 +121,115 @@ class MaskedAutoencoderViT(nn.Module):
         x = torch.einsum('nhwpqc->nchpwq', x)
         imgs = x.reshape(shape=(x.shape[0], 3, h * p, h * p))
         return imgs
-
-    # def random_masking(self, x, mask_ratio):
-    #     """
-    #     Perform per-sample random masking by per-sample shuffling.
-    #     Per-sample shuffling is done by argsort random noise.
-    #     x: [N, L, D], sequence
-    #     """
-    #     N, L, D = x.shape  # batch, length, dim
-    #     len_keep = int(L * (1 - mask_ratio))
-        
-    #     noise = torch.rand(N, L, device=x.device)  # noise in [0, 1]
-        
-    #     # sort noise for each sample
-    #     ids_shuffle = torch.argsort(noise, dim=1)  # ascend: small is keep, large is remove
-    #     ids_restore = torch.argsort(ids_shuffle, dim=1)
-
-    #     # keep the first subset
-    #     ids_keep = ids_shuffle[:, :len_keep]
-    #     x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
-
-    #     # generate the binary mask: 0 is keep, 1 is remove
-    #     mask = torch.ones([N, L], device=x.device)
-    #     mask[:, :len_keep] = 0
-    #     # unshuffle to get the binary mask
-    #     mask = torch.gather(mask, dim=1, index=ids_restore)
-
-    #     return x_masked, mask, ids_restore
     
-    def random_masking(self, x, mask_ratio):
-        N, L, D = x.shape
-        H = W = int(L**0.5)
+    def custom_masking(self, x, mask_type, mask_ratio=0.75, block_size = 4, mask_tensor = None):
+        N, L, D = x.shape  # batch, length, dim
 
-        mask_vec = torch.zeros((N, L), device=x.device)
-        mask_type = 'center_block'
-        # mask_type = 'checkerboard'
+        if mask_type == 'random_masking':
+            """
+            Perform per-sample random masking by per-sample shuffling.
+            Per-sample shuffling is done by argsort random noise.
+            x: [N, L, D], sequence
+            """
+            len_keep = int(L * (1 - mask_ratio))
+        
+            noise = torch.rand(N, L, device=x.device)  # noise in [0, 1]
+            
+            # sort noise for each sample
+            ids_shuffle = torch.argsort(noise, dim=1)  # ascend: small is keep, large is remove
+            ids_restore = torch.argsort(ids_shuffle, dim=1)
 
-        if mask_type == 'center_block':
-            for r in range(5, 9):
-                for c in range(5, 9):
+            # keep the first subset
+            ids_keep = ids_shuffle[:, :len_keep]
+            x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+
+            # generate the binary mask: 0 is keep, 1 is remove
+            mask = torch.ones([N, L], device=x.device)
+            mask[:, :len_keep] = 0
+            # unshuffle to get the binary mask
+            mask = torch.gather(mask, dim=1, index=ids_restore)
+
+            return x_masked, mask, ids_restore
+
+        elif mask_type == 'center_block':                
+            H = W = int(L**0.5)
+            assert block_size <= H, f"block_size {block_size} too large for patch grid {H}x{W}"
+
+            mask_vec = torch.zeros((N, L), device=x.device)
+
+            start = (H - block_size) // 2
+            end = start + block_size
+
+            for r in range(start, end):
+                for c in range(start, end):
                     idx = r * W + c
                     mask_vec[:, idx] = 1
+            
+            ids_shuffle = torch.argsort(mask_vec, dim=1)
+            ids_restore = torch.argsort(ids_shuffle, dim=1)   # 복원용 인덱스
 
-        elif mask_type == 'checkerboard':
-            for i in range(H):
-                for j in range(W):
-                    if (i + j) % 2 == 0:
-                        idx = i * W + j
-                        mask_vec[:, idx] = 1
+            ids_keep = torch.nonzero(mask_vec == 0, as_tuple=False)[:, 1].reshape(N, -1)
+            x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
 
-        assert mask_vec.shape == (N, L)
+            return x_masked, mask_vec, ids_restore           
 
-        ids_shuffle = torch.argsort(mask_vec, dim=1)      # keep 먼저
-        ids_restore = torch.argsort(ids_shuffle, dim=1)   # 복원용 인덱스
+        elif mask_type == 'random_block':
+            H = W = int(L**0.5)  # 보통 14x14
+            assert H == 14 and W == 14, "patch16 버전에서만 작동"
 
-        ids_keep = torch.nonzero(mask_vec == 0, as_tuple=False)[:, 1].reshape(N, -1)  # ✅ 수정
-        x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+            mask_vec = torch.zeros((N, L), device=x.device)
 
-        return x_masked, mask_vec, ids_restore
+            # ROI 범위
+            x_min, x_max = 5, 11   # 가로 방향: col
+            y_min, y_max = 2, 13   # 세로 방향: row
 
+            for b in range(N):
+                # 랜덤한 좌표와 크기
+                w = torch.randint(1, x_max - x_min + 1, (1,)).item()
+                h = torch.randint(1, y_max - y_min + 1, (1,)).item()
 
+                x0 = torch.randint(x_min, x_max - w + 1, (1,)).item()
+                y0 = torch.randint(y_min, y_max - h + 1, (1,)).item()
 
-    def forward_encoder(self, x, mask_ratio):
+                # 마스킹할 블록에 해당하는 index에 1 할당
+                for r in range(y0, y0 + h):
+                    for c in range(x0, x0 + w):
+                        idx = r * W + c
+                        mask_vec[b, idx] = 1
+
+            ids_shuffle = torch.argsort(mask_vec, dim=1)
+            ids_restore = torch.argsort(ids_shuffle, dim=1)
+
+            ids_keep = torch.nonzero(mask_vec == 0, as_tuple=False)[:, 1].reshape(N, -1)
+            x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+
+            return x_masked, mask_vec, ids_restore
+            
+        elif mask_type == 'custom_tensor':
+            assert 'mask_tensor' != None, "'custom_tensor' requires 'mask_tensor' argument"
+
+            custom_mask = mask_tensor.to(x.device)
+
+            # shape 정리
+            if custom_mask.dim() == 2:  # [14, 14] → [1, 14, 14]
+                custom_mask = custom_mask.unsqueeze(0).repeat(N, 1, 1)
+            assert custom_mask.shape == (N, 14, 14), f"Expected mask shape [N, 14, 14], got {custom_mask.shape}"
+
+            mask_vec = custom_mask.reshape(N, -1).to(x.device).float()  # [N, 196]
+
+            ids_shuffle = torch.argsort(mask_vec, dim=1)
+            ids_restore = torch.argsort(ids_shuffle, dim=1)
+
+            ids_keep = torch.nonzero(mask_vec == 0, as_tuple=False)[:, 1].reshape(N, -1)
+            x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+
+            return x_masked, mask_vec, ids_restore
+
+        else:
+            raise ValueError(f"[Error] No such supported masking type: '{mask_type}'")
+    
+
+    def forward_encoder(self, x, mask_type, mask_ratio, **kwargs):
         # embed patches
         x = self.patch_embed(x)
 
@@ -188,7 +237,7 @@ class MaskedAutoencoderViT(nn.Module):
         x = x + self.pos_embed[:, 1:, :]
 
         # masking: length -> length * mask_ratio
-        x, mask, ids_restore = self.random_masking(x, mask_ratio)
+        x, mask, ids_restore = self.custom_masking(x, mask_type, mask_ratio, **kwargs)
 
         # append cls token
         cls_token = self.cls_token + self.pos_embed[:, :1, :]
@@ -246,8 +295,8 @@ class MaskedAutoencoderViT(nn.Module):
         loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
         return loss
 
-    def forward(self, imgs, mask_ratio=0.75):
-        latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
+    def forward(self, imgs, mask_type='random_masking', mask_ratio=0.75, **kwargs):
+        latent, mask, ids_restore = self.forward_encoder(imgs, mask_type, mask_ratio, **kwargs)
         pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
         loss = self.forward_loss(imgs, pred, mask)
         return loss, pred, mask

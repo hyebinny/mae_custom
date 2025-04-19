@@ -8,8 +8,6 @@
 # DeiT: https://github.com/facebookresearch/deit
 # BEiT: https://github.com/microsoft/unilm/tree/master/beit
 # --------------------------------------------------------
-import sys
-
 import argparse
 import datetime
 import json
@@ -54,15 +52,6 @@ def get_args_parser():
 
     parser.add_argument('--mask_ratio', default=0.75, type=float,
                         help='Masking ratio (percentage of removed patches).')
-    
-    parser.add_argument('--mask_type', default="random_masking", type=str,
-                        help='possible options: ["random_masking", "center_block", "random_block", "custom_tensor"]')
-    
-    parser.add_argument('--block_size', default=4, type=int,
-                        help='needed when mask_type == "center_block"')
-    
-    parser.add_argument('--mask_tensor', default=4, type=int,
-                        help='needed when mask_type == "custom_tensor", path to .npy file')
 
     parser.add_argument('--norm_pix_loss', action='store_true',
                         help='Use (per-patch) normalized pixels as targets for computing loss')
@@ -86,9 +75,9 @@ def get_args_parser():
     parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
                         help='dataset path')
 
-    parser.add_argument('--output_dir', default='./output/pth_dir',
+    parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='./output/log_dir',
+    parser.add_argument('--log_dir', default='./output_dir',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -224,27 +213,10 @@ def main(args):
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
 
-class TeeLogger(object):
-    def __init__(self, filepath):
-        self.terminal = sys.stdout
-        self.log = open(filepath, "a", encoding="utf-8")
-
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
-
-    def flush(self):
-        self.terminal.flush()
-        self.log.flush()
 
 if __name__ == '__main__':
     args = get_args_parser()
     args = args.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-
-    # train log 저장
-    log_file_path = os.path.join(args.output_dir, "train_log.txt")
-    sys.stdout = TeeLogger(log_file_path)
-
     main(args)
