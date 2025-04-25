@@ -84,7 +84,7 @@ input image, masked image, reconstructed image, 그리고 masked image 중 visib
 
 ```
 cd custom_mae
-python inference_mae_recon.py --model_ckpt [ckpt 경로] \
+python inference_mae.py --model_ckpt [ckpt 경로] \
   --image_dir [input 이미지들이 포함된 경로] \
   --output_dir [결과를 저장할 경로] \
   --mask_type [masking 방법]
