@@ -174,7 +174,7 @@ class MaskedAutoencoderViT(nn.Module):
             return x_masked, mask_vec, ids_restore           
 
         elif mask_type == 'random_block':
-            H = W = int(L**0.5)  # 보통 14x14
+            H = W = int(L**0.5)
             assert H == 14 and W == 14, "patch16 버전에서만 작동"
 
             mask_vec = torch.zeros((N, L), device=x.device)

@@ -47,19 +47,28 @@ model.load_state_dict(checkpoint['model'], strict=False)
 model.to(device)
 model.eval()
 
-# ----- 이미지 전처리 작업 설정 -----
+# ----- 이미지 전처리  ----- #
+class PadToSquare:
+        def __call__(self, img):
+            w, h = img.size
+            max_side = max(w, h)
+            new_img = Image.new("RGB", (max_side, max_side), (0, 0, 0))  # black padding
+            new_img.paste(img, ((max_side - w) // 2, (max_side - h) // 2))
+            return new_img
+    
 transform = transforms.Compose([
-    transforms.Resize((224, 224), interpolation=Image.BICUBIC),
+    PadToSquare(),  # black padding
+    transforms.Resize((224, 224), interpolation=3),
+    
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225])
-])
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], # ImageNet의 mean과 std으로 정규화
+                        std=[0.229, 0.224, 0.225]),
+    ])
 
-# ----- 이미지 전처리 -----
 def preprocess_image(img_path):
     img_pil = Image.open(img_path).convert('RGB')
     img_pil_resized = img_pil.resize((224, 224), Image.BICUBIC)  # 정규화 전 저장용
-    img_tensor = transform(img_pil)  # ← transform 적용
+    img_tensor = transform(img_pil) 
     return img_tensor.unsqueeze(0).to(device), img_pil_resized
 
 # ---- 정규화 복원 -----

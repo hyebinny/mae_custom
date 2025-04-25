@@ -24,6 +24,9 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
+# Custom Augmentation
+from PIL import Image
+
 import timm
 
 assert timm.__version__ == "0.3.2"  # version check
@@ -55,6 +58,7 @@ def get_args_parser():
     parser.add_argument('--mask_ratio', default=0.75, type=float,
                         help='Masking ratio (percentage of removed patches).')
     
+    ###### Custom Masking ######
     parser.add_argument('--mask_type', default="random_masking", type=str,
                         help='possible options: ["random_masking", "center_block", "random_block", "custom_tensor"]')
     
@@ -63,6 +67,7 @@ def get_args_parser():
     
     parser.add_argument('--mask_tensor', default=4, type=int,
                         help='needed when mask_type == "custom_tensor", path to .npy file')
+    ###########################
 
     parser.add_argument('--norm_pix_loss', action='store_true',
                         help='Use (per-patch) normalized pixels as targets for computing loss')
@@ -87,9 +92,9 @@ def get_args_parser():
                         help='dataset path')
 
     parser.add_argument('--output_dir', default='./output/pth_dir',
-                        help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='./output/log_dir',
-                        help='path where to tensorboard log')
+                        help='path where to save')
+    # parser.add_argument('--log_dir', default='./output/log_dir',
+    #                     help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
     parser.add_argument('--seed', default=0, type=int)
@@ -130,12 +135,38 @@ def main(args):
 
     cudnn.benchmark = True
 
-    # simple augmentation
+    # # simple augmentation
+    # transform_train = transforms.Compose([
+    #         transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+    ##### Custom Augmentation ######
+    class PadToSquare:
+        def __call__(self, img):
+            w, h = img.size
+            max_side = max(w, h)
+            new_img = Image.new("RGB", (max_side, max_side), (0, 0, 0))  # black padding
+            new_img.paste(img, ((max_side - w) // 2, (max_side - h) // 2))
+            return new_img
+    
     transform_train = transforms.Compose([
-            transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        transforms.RandomHorizontalFlip(),  # 좌우 반전
+        transforms.ColorJitter(
+            brightness=0.4,  # 조도 변화
+            contrast=0.4,    # 대비 변화
+        ),        
+        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)), # 가우시안 노이즈
+        PadToSquare(),  # black padding
+        transforms.Resize((224, 224), interpolation=3),  # BICUBIC
+        
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], # ImageNet의 mean과 std으로 정규화
+                            std=[0.229, 0.224, 0.225]),
+        ])
+    ###############################
+
     dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
     print(dataset_train)
 
@@ -149,9 +180,9 @@ def main(args):
     else:
         sampler_train = torch.utils.data.RandomSampler(dataset_train)
 
-    if global_rank == 0 and args.log_dir is not None:
-        os.makedirs(args.log_dir, exist_ok=True)
-        log_writer = SummaryWriter(log_dir=args.log_dir)
+    if global_rank == 0 and args.output_dir is not None:
+        os.makedirs(args.output_dir, exist_ok=True)
+        log_writer = SummaryWriter(log_dir=args.output_dir)
     else:
         log_writer = None
 
@@ -205,8 +236,7 @@ def main(args):
             log_writer=log_writer,
             args=args
         )
-        # if args.output_dir and (epoch % 20 == 0 or epoch + 1 == args.epochs):
-        if args.output_dir and (epoch % 10 == 0 or epoch + 1 == args.epochs):    
+        if args.output_dir and ((epoch + 1) % 10 == 0 or epoch + 1 == args.epochs): ## 10에폭마다 저장
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch)
