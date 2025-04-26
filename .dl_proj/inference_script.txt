@@ -1,5 +1,0 @@
-python /mnt/d/DL-proj/mae_custom/inference_mae_recon.py \
---model_ckpt \
---image_dir /mnt/d/DL-proj/data/val/class_0 \
---output_dir /mnt/d/DL-proj/dl_proj/experiment_0/inference_00 \
---mask_type center_block

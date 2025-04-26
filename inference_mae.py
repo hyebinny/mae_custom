@@ -67,9 +67,10 @@ transform = transforms.Compose([
 
 def preprocess_image(img_path):
     img_pil = Image.open(img_path).convert('RGB')
-    img_pil_resized = img_pil.resize((224, 224), Image.BICUBIC)  # 정규화 전 저장용
+    img_pil_padded = PadToSquare()(img_pil)
+    img_pil_padded = img_pil_padded.resize((224, 224), Image.BICUBIC) # _mask, _orig으로 저장
     img_tensor = transform(img_pil) 
-    return img_tensor.unsqueeze(0).to(device), img_pil_resized
+    return img_tensor.unsqueeze(0).to(device), img_pil_padded
 
 # ---- 정규화 복원 -----
 def unnormalize(img_tensor):
@@ -102,7 +103,7 @@ def apply_patch_mask_pil(orig_img_pil, mask, patch_size=16):
 def reconstruct_image(img_path):
     global loss_log
 
-    img_tensor, img_pil = preprocess_image(img_path)  # PIL 이미지 같이 받기
+    img_tensor, img_pil_padded = preprocess_image(img_path)  # PIL 이미지 같이 받기
 
     with torch.no_grad():
         kwargs = {}
@@ -127,7 +128,7 @@ def reconstruct_image(img_path):
     mask = mask.permute(0, 2, 3, 1).detach().cpu().squeeze()
     
     # masked image 생성 (PIL 기반)
-    masked_img_pil = apply_patch_mask_pil(img_pil.copy(), mask_for_viz)
+    masked_img_pil = apply_patch_mask_pil(img_pil_padded.copy(), mask_for_viz)
 
     base = os.path.splitext(os.path.basename(img_path))[0]
     y = unnormalize(y.permute(2, 0, 1))  # [C, H, W]
@@ -144,8 +145,8 @@ def reconstruct_image(img_path):
     visible = visible * (1 - mask) + y * mask
     
     save_image(y, os.path.join(output_dir, f"{base}_recon.png"))
-    masked_img_pil.save(os.path.join(output_dir, f"{base}_masked.png"))  # 🔄 수정됨
-    img_pil.save(os.path.join(output_dir, f"{base}_orig.png"))
+    masked_img_pil.save(os.path.join(output_dir, f"{base}_masked.png"))  
+    img_pil_padded.save(os.path.join(output_dir, f"{base}_orig.png"))
     save_image(visible, os.path.join(output_dir, f"{base}_visible.png"))
 
 # 폴더 내 모든 이미지 reconstruct
