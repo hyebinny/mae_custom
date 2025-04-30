@@ -179,19 +179,19 @@ class MaskedAutoencoderViT(nn.Module):
 
             mask_vec = torch.zeros((N, L), device=x.device)
 
-            # ROI 범위
-            x_min, x_max = 5, 11   # 가로 방향: col
-            y_min, y_max = 2, 13   # 세로 방향: row
+            # ROI 범위 설정
+            x_min, x_max = 4, 10   # 열 방향: index 4 ~ 9
+            y_min, y_max = 1, 13   # 행 방향: index 1 ~ 12
 
             for b in range(N):
-                # 랜덤한 좌표와 크기
-                w = torch.randint(1, x_max - x_min + 1, (1,)).item()
-                h = torch.randint(1, y_max - y_min + 1, (1,)).item()
+                # 블록 크기
+                w = torch.randint(1, x_max - x_min + 1, (1,)).item()  # 최대 w = 6
+                h = torch.randint(1, y_max - y_min + 1, (1,)).item()  # 최대 h = 12
 
+                # 시작 위치
                 x0 = torch.randint(x_min, x_max - w + 1, (1,)).item()
                 y0 = torch.randint(y_min, y_max - h + 1, (1,)).item()
 
-                # 마스킹할 블록에 해당하는 index에 1 할당
                 for r in range(y0, y0 + h):
                     for c in range(x0, x0 + w):
                         idx = r * W + c
