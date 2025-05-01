@@ -204,6 +204,37 @@ class MaskedAutoencoderViT(nn.Module):
             x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
 
             return x_masked, mask_vec, ids_restore
+        
+        ## ROI 확인
+        # elif mask_type == 'random_block':
+        #     H = W = int(L**0.5)
+        #     assert H == 14 and W == 14, "patch16 버전에서만 작동"
+
+        #     mask_vec = torch.zeros((N, L), device=x.device)
+
+        #     # ROI 범위 설정
+        #     x_min, x_max = 4, 10   # 열 방향: index 4 ~ 9
+        #     y_min, y_max = 1, 13   # 행 방향: index 1 ~ 12
+
+        #     # 고정된 블록 크기 및 위치
+        #     w = x_max - x_min      # 6
+        #     h = y_max - y_min      # 12
+        #     x0 = x_min
+        #     y0 = y_min
+
+        #     for b in range(N):
+        #         for r in range(y0, y0 + h):
+        #             for c in range(x0, x0 + w):
+        #                 idx = r * W + c
+        #                 mask_vec[b, idx] = 1
+
+        #     ids_shuffle = torch.argsort(mask_vec, dim=1)
+        #     ids_restore = torch.argsort(ids_shuffle, dim=1)
+
+        #     ids_keep = torch.nonzero(mask_vec == 0, as_tuple=False)[:, 1].reshape(N, -1)
+        #     x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+
+        #     return x_masked, mask_vec, ids_restore
             
         elif mask_type == 'custom_tensor':
             assert 'mask_tensor' != None, "'custom_tensor' requires 'mask_tensor' argument"
