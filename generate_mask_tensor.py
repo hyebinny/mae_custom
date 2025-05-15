@@ -11,13 +11,13 @@ print(mask)
 
 # 좌측 전신
 mask = np.zeros((14, 14))
-mask[1:13, 3:6] = 1  
+mask[1:13, 4:7] = 1  
 np.save("mask_tensor/left_all.npy", mask)  
 print(mask)
 
 # 우측 전신
 mask = np.zeros((14, 14))
-mask[1:13, 6:10] = 1  
+mask[1:13, 7:10] = 1  
 np.save("mask_tensor/right_all.npy", mask)  
 print(mask)
 

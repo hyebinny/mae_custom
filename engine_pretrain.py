@@ -41,8 +41,8 @@ def train_one_epoch(model: torch.nn.Module,
 
     for data_iter_step, (samples, _) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
 
-        # 학습에서 사용된 augmented image를 10에폭마다 저장
-        if (epoch == 0 or (epoch+1) % 10 == 0) and data_iter_step == 0 and misc.is_main_process():
+        # 학습에서 사용된 augmented image를 5에폭마다 저장
+        if (epoch == 0 or (epoch+1) % 5 == 0) and data_iter_step == 0 and misc.is_main_process():
 
             model.eval()
             with torch.no_grad():

@@ -22,6 +22,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as F
 import torchvision.datasets as datasets
 
 # Custom Augmentation
@@ -135,13 +136,6 @@ def main(args):
 
     cudnn.benchmark = True
 
-    # # simple augmentation
-    # transform_train = transforms.Compose([
-    #         transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
-    #         transforms.RandomHorizontalFlip(),
-    #         transforms.ToTensor(),
-    #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-
     ##### Custom Augmentation ######
     class PadToSquare:
         def __call__(self, img):
@@ -150,22 +144,218 @@ def main(args):
             new_img = Image.new("RGB", (max_side, max_side), (0, 0, 0))  # black padding
             new_img.paste(img, ((max_side - w) // 2, (max_side - h) // 2))
             return new_img
-    
-    transform_train = transforms.Compose([
-        transforms.RandomHorizontalFlip(),  # 좌우 반전
-        transforms.ColorJitter(
-            brightness=0.4,  # 조도 변화
-            contrast=0.4,    # 대비 변화
-        ),        
-        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)), # 가우시안 노이즈
-        PadToSquare(),  # black padding
-        transforms.Resize((224, 224), interpolation=3),  # BICUBIC
         
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], # ImageNet의 mean과 std으로 정규화
-                            std=[0.229, 0.224, 0.225]),
-        ])
+    # ###############################
+    # # Baseline
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     transforms.RandomHorizontalFlip(),  # 좌우 반전
+    #     PadToSquare(),  # black padding
+
+    #     transforms.Resize((224, 224), interpolation=3),  # BICUBIC
+        
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], # ImageNet의 mean과 std으로 정규화
+    #                         std=[0.229, 0.224, 0.225]),
+    #     ])
+    # ###############################
+
+    # ###############################
+    # # Day
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(),          
+    #     # BICUBIC resizing
+    #     transforms.Resize((224, 224), interpolation=3),  
+    #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
+    #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+        
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    #     ])
+    # ###############################
+
+    ## 밝기 고정 함수
+    class FixedBrightness:
+        def __init__(self, brightness_factor):
+            self.brightness_factor = brightness_factor
+
+        def __call__(self, img):
+            return F.adjust_brightness(img, self.brightness_factor)
+
     ###############################
+    # Night_0
+    ###############################
+    transform_train = transforms.Compose([
+        # 랜덤 좌우 반전
+        transforms.RandomHorizontalFlip(),  
+        # black padding
+        PadToSquare(), 
+        # BICUBIC resizing         
+        transforms.Resize((224, 224), interpolation=3), 
+        # 랜덤 조도 변화 (0.5배 어두운 정도까지)
+        transforms.ColorJitter(brightness=(0.5, 1.0)),
+
+        transforms.ToTensor(),
+        # ImageNet의 mean과 std으로 정규화
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                            std=[0.229, 0.224, 0.225]),
+    ])
+    ###############################
+
+    # ###############################
+    # # Night_1
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 랜덤 조도 변화 (0.5배 어두운 정도까지)
+    #     transforms.ColorJitter(brightness=(0.5, 1.0)),
+    #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
+    #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
+
+    # ###############################
+    # # Night_2  ###
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 고정 밝기 변화 (0.5배 어둡게)
+    #     FixedBrightness(brightness_factor=0.5),
+
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
+
+    # ###############################
+    # # Night_3
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 고정 밝기 변화 (0.5배 어둡게)
+    #     FixedBrightness(brightness_factor=0.5),
+    #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
+    #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
+
+    ###############################
+    # Deep_Night_0
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 랜덤 조도 변화 (0.1배 어두운 정도까지)
+    #     transforms.ColorJitter(brightness=(0.1, 1.0)),
+
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
+
+    # ###############################
+    # # Deep_Night_1
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 랜덤 조도 변화 (0.5배 어두운 정도까지)
+    #     transforms.ColorJitter(brightness=(0.1, 1.0)),
+    #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
+    #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
+
+    # ###############################
+    # # Deep_Night_2
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 고정 밝기 변화 (0.1배 어둡게)
+    #     FixedBrightness(brightness_factor=0.1),
+
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
+
+    # ###############################
+    # # Deep_Night_3
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 고정 밝기 변화 (0.5배 어둡게)
+    #     FixedBrightness(brightness_factor=0.1),
+    #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
+    #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
+
 
     dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
     print(dataset_train)
