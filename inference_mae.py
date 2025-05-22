@@ -11,7 +11,7 @@ import numpy as np
 
 from tqdm import tqdm
 
-from models_mae import mae_vit_base_patch16
+from models_mae import mae_vit_base_patch16, mae_vit_large_patch16
 from util.pos_embed import interpolate_pos_embed
 
 # ----- argparse로 경로 설정 -----
@@ -41,7 +41,8 @@ os.makedirs(output_dir, exist_ok=True)
 
 # ----- 모델 불러오기 -----
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = mae_vit_base_patch16()
+# model = mae_vit_base_patch16()
+model = mae_vit_large_patch16()
 checkpoint = torch.load(model_ckpt, map_location='cpu')
 model.load_state_dict(checkpoint['model'], strict=False)
 model.to(device)
@@ -116,7 +117,7 @@ def reconstruct_image(img_path):
 
         loss, y, mask = model(img_tensor, mask_type = args.mask_type, mask_ratio = args.mask_ratio, **kwargs)
     
-    loss_log.append(f"{img_path} 에 대한 loss: {loss.item():.8f}")
+    loss_log.append(f"{img_path}: {loss.item():.8f}")
 
     y = model.unpatchify(y)
     y = y.permute(0, 2, 3, 1).detach().cpu().squeeze()
@@ -162,7 +163,7 @@ with open(os.path.join(output_dir, "images_loss.txt"), "w") as f:
 
 # ----- 평균 loss 계산 및 출력 -----
 # 문자열에서 loss 값만 추출해서 float 리스트로 변환
-loss_values = [float(line.split("loss:")[-1].strip()) for line in loss_log]
+loss_values = [float(line.split(":")[-1].strip()) for line in loss_log]
 mean_loss = sum(loss_values) / len(loss_values)
 print(f"mean loss: {mean_loss:.8f}")
 

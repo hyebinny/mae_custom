@@ -188,25 +188,24 @@ def main(args):
         def __call__(self, img):
             return F.adjust_brightness(img, self.brightness_factor)
 
-    ###############################
-    # Night_0
-    ###############################
-    transform_train = transforms.Compose([
-        # 랜덤 좌우 반전
-        transforms.RandomHorizontalFlip(),  
-        # black padding
-        PadToSquare(), 
-        # BICUBIC resizing         
-        transforms.Resize((224, 224), interpolation=3), 
-        # 랜덤 조도 변화 (0.5배 어두운 정도까지)
-        transforms.ColorJitter(brightness=(0.5, 1.0)),
-
-        transforms.ToTensor(),
-        # ImageNet의 mean과 std으로 정규화
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                            std=[0.229, 0.224, 0.225]),
-    ])
-    ###############################
+    # ###############################
+    # # Night_0
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 랜덤 조도 변화 (0.5배 어두운 정도까지)
+    #     transforms.ColorJitter(brightness=(0.5, 1.0)),
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    # ###############################
 
     # ###############################
     # # Night_1
@@ -250,27 +249,27 @@ def main(args):
     # ])
     # ###############################
 
-    # ###############################
-    # # Night_3
-    # ###############################
-    # transform_train = transforms.Compose([
-    #     # 랜덤 좌우 반전
-    #     transforms.RandomHorizontalFlip(),  
-    #     # black padding
-    #     PadToSquare(), 
-    #     # BICUBIC resizing         
-    #     transforms.Resize((224, 224), interpolation=3), 
-    #     # 고정 밝기 변화 (0.5배 어둡게)
-    #     FixedBrightness(brightness_factor=0.5),
-    #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
-    #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+    ###############################
+    # Night_3
+    ###############################
+    transform_train = transforms.Compose([
+        # 랜덤 좌우 반전
+        transforms.RandomHorizontalFlip(),  
+        # black padding
+        PadToSquare(), 
+        # BICUBIC resizing         
+        transforms.Resize((224, 224), interpolation=3), 
+        # 고정 밝기 변화 (0.5배 어둡게)
+        FixedBrightness(brightness_factor=0.5),
+        # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
+        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
 
-    #     transforms.ToTensor(),
-    #     # ImageNet의 mean과 std으로 정규화
-    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-    #                         std=[0.229, 0.224, 0.225]),
-    # ])
-    # ###############################
+        transforms.ToTensor(),
+        # ImageNet의 mean과 std으로 정규화
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                            std=[0.229, 0.224, 0.225]),
+    ])
+    ###############################
 
     ###############################
     # Deep_Night_0
@@ -302,7 +301,7 @@ def main(args):
     #     PadToSquare(), 
     #     # BICUBIC resizing         
     #     transforms.Resize((224, 224), interpolation=3), 
-    #     # 랜덤 조도 변화 (0.5배 어두운 정도까지)
+    #     # 랜덤 조도 변화 (0.1배 어두운 정도까지)
     #     transforms.ColorJitter(brightness=(0.1, 1.0)),
     #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
     #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
@@ -344,7 +343,7 @@ def main(args):
     #     PadToSquare(), 
     #     # BICUBIC resizing         
     #     transforms.Resize((224, 224), interpolation=3), 
-    #     # 고정 밝기 변화 (0.5배 어둡게)
+    #     # 고정 밝기 변화 (0.1배 어둡게)
     #     FixedBrightness(brightness_factor=0.1),
     #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
     #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
