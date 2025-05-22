@@ -1,7 +1,7 @@
 # MAE_custom
 MAE에서 image reconstruction까지만의 과정을 다룹니다.  
-mae_vit_base_patch16만의 적용을 다룹니다.  
-mae_vit_base_patch16는 한 패치의 크기가 (16픽셀X16픽셀)인 경우로, 224X224 크기의 이미지가 들어왔을 때 한 변에 14개의 패치로 분할하게 됩니다.  
+mae_vit_large_patch16만의 적용을 다룹니다.  
+mae_vit_large_patch16는 한 패치의 크기가 (16픽셀X16픽셀)인 경우로, 224X224 크기의 이미지가 들어왔을 때 한 변에 14개의 패치로 분할하게 됩니다.  
 
 본 repo에서는 4가지의 custom 옵션만을 제공합니다: `random_masking`, `center_block`, `random_block`, 그리고 `custom_tensor`.
 
@@ -37,26 +37,27 @@ conda install -c "nvidia/label/cuda-11.6.0" cuda-toolkit
         | -- 00004_image_000002.png
         ...
 ```
-즉, 이미지들은 train/class_0 그리고 val/class_0 안에 들어있어야 합니다.  
-train/val split은 본 repo의 `trainval_split/train_val_copy.py`를 활용하실 수 있습니다.
-
+즉, 이미지들은 train/class_0 그리고 val/class_0 안에 들어있어야 합니다. 
 
 ## Training
-Image reconstruction을 위한 script는 `main_pretrain.py`입니다.  
+Image reconstruction task에 대한 학습을 진행하는 script는 `main_pretrain.py`입니다.  
 
 먼저 아래 명령어로 official weight을 다운받으세요. (random masking 방식으로 ImageNet에 대해 학습된 weigth)
 ```wget https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_base.pth```
 
+또는 gan loss가 추가된 weight을 다운받으세요.
+```wget https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_large_ganloss.pth```
+
 다음과 같이 학습을 시작할 수 있습니다. 학습 log, 각 epoch별 weight(.pth 파일), 그리고 학습에 사용된 이미지 중 첫 번째 이미지에 대한 시각화 결과가 저장됩니다.
 ```
 python main_pretrain.py \
-  --model mae_vit_base_patch16 \
+  --model mae_vit_large_patch16 \
   --input_size 224 \
   --batch_size 32 \
   --mask_ratio 0.75 \
   --epochs [epoch 수 지정] \
-  --warmup_epochs 5 \
-  --blr 1.5e-4 \
+  --warmup_epochs 0 \
+  --blr 1e-4 \
   --weight_decay 0.05 \
   --data_path [학습 데이터 경로] \
   --resume [위에서 다운받은 mae_visualize_vit_base.pth 경로] \
