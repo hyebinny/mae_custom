@@ -43,10 +43,14 @@ conda install -c "nvidia/label/cuda-11.6.0" cuda-toolkit
 Image reconstruction task에 대한 학습을 진행하는 script는 `main_pretrain.py`입니다.  
 
 먼저 아래 명령어로 official weight을 다운받으세요. (random masking 방식으로 ImageNet에 대해 학습된 weigth)
-```wget https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_base.pth```
+```
+wget https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_large.pth
+```
 
 또는 gan loss가 추가된 weight을 다운받으세요.
-```wget https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_large_ganloss.pth```
+```
+wget https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_large_ganloss.pth
+```
 
 다음과 같이 학습을 시작할 수 있습니다. 학습 log, 각 epoch별 weight(.pth 파일), 그리고 학습에 사용된 이미지 중 첫 번째 이미지에 대한 시각화 결과가 저장됩니다.
 ```
