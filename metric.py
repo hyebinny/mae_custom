@@ -53,8 +53,8 @@ def calculate_metrics(infer_dir, output_txt_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--infer_dir', type=str, required=True, help='Path to inference directory')
-    parser.add_argument('--output', type=str, default=None, help='Path to output .txt file')
+    parser.add_argument('--output_dir', type=str, default=None, help='Path to output .txt file')
     args = parser.parse_args()
 
-    output_path = args.output if args.output else os.path.join(args.infer_dir, 'metrics_results.txt')
+    output_path = args.output_dir if args.output_dir else os.path.join(args.infer_dir, 'metrics_results.txt')
     calculate_metrics(args.infer_dir, output_path)

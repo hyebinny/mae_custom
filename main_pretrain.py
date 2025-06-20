@@ -145,20 +145,20 @@ def main(args):
             new_img.paste(img, ((max_side - w) // 2, (max_side - h) // 2))
             return new_img
         
-    # ###############################
-    # # Baseline
-    # ###############################
-    # transform_train = transforms.Compose([
-    #     transforms.RandomHorizontalFlip(),  # 좌우 반전
-    #     PadToSquare(),  # black padding
+    ###############################
+    # Baseline
+    ###############################
+    transform_train = transforms.Compose([
+        transforms.RandomHorizontalFlip(),  # 좌우 반전
+        PadToSquare(),  # black padding
 
-    #     transforms.Resize((224, 224), interpolation=3),  # BICUBIC
+        transforms.Resize((224, 224), interpolation=3),  # BICUBIC
         
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], # ImageNet의 mean과 std으로 정규화
-    #                         std=[0.229, 0.224, 0.225]),
-    #     ])
-    # ###############################
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], # ImageNet의 mean과 std으로 정규화
+                            std=[0.229, 0.224, 0.225]),
+        ])
+    ###############################
 
     # ###############################
     # # Day
@@ -180,13 +180,13 @@ def main(args):
     #     ])
     # ###############################
 
-    ## 밝기 고정 함수
-    class FixedBrightness:
-        def __init__(self, brightness_factor):
-            self.brightness_factor = brightness_factor
+    # ## 밝기 고정 함수
+    # class FixedBrightness:
+    #     def __init__(self, brightness_factor):
+    #         self.brightness_factor = brightness_factor
 
-        def __call__(self, img):
-            return F.adjust_brightness(img, self.brightness_factor)
+    #     def __call__(self, img):
+    #         return F.adjust_brightness(img, self.brightness_factor)
 
     # ###############################
     # # Night_0
@@ -249,27 +249,27 @@ def main(args):
     # ])
     # ###############################
 
-    ###############################
-    # Night_3
-    ###############################
-    transform_train = transforms.Compose([
-        # 랜덤 좌우 반전
-        transforms.RandomHorizontalFlip(),  
-        # black padding
-        PadToSquare(), 
-        # BICUBIC resizing         
-        transforms.Resize((224, 224), interpolation=3), 
-        # 고정 밝기 변화 (0.5배 어둡게)
-        FixedBrightness(brightness_factor=0.5),
-        # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
-        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+    # ###############################
+    # # Night_3
+    # ###############################
+    # transform_train = transforms.Compose([
+    #     # 랜덤 좌우 반전
+    #     transforms.RandomHorizontalFlip(),  
+    #     # black padding
+    #     PadToSquare(), 
+    #     # BICUBIC resizing         
+    #     transforms.Resize((224, 224), interpolation=3), 
+    #     # 고정 밝기 변화 (0.5배 어둡게)
+    #     FixedBrightness(brightness_factor=0.5),
+    #     # 랜덤 가우시안 블러(sigma 0.1~2.0 사이에서 랜덤하게 적용됨)
+    #     transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
 
-        transforms.ToTensor(),
-        # ImageNet의 mean과 std으로 정규화
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                            std=[0.229, 0.224, 0.225]),
-    ])
-    ###############################
+    #     transforms.ToTensor(),
+    #     # ImageNet의 mean과 std으로 정규화
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+    #                         std=[0.229, 0.224, 0.225]),
+    # ])
+    ##############################
 
     ###############################
     # Deep_Night_0
