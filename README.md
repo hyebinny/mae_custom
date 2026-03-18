@@ -12,11 +12,11 @@ Make sure to use `timm==0.3.2`.
 Organize the image data in the following structure:
 ```
 | data
-    | -- train / class_0
+    | -- train / 0
         | -- 00001_image_000001.png
         | -- 00001_image_000002.png
         ...
-    | -- val / class_0
+    | -- val / 0
         | -- 00004_image_000001.png
         | -- 00004_image_000002.png
         ...
